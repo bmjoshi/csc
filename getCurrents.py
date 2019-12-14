@@ -121,6 +121,7 @@ def getAllPlots(filename):
     c.Divide(1,3)
     lst = []
     for num, q in enumerate(['I','V']):
+        c.Clear()
         for v in voltageMap:
             index = num*3+voltageMap[v]
             print "Plotting "+q+" "+v+" "+str(index+1)
