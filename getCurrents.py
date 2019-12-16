@@ -152,9 +152,8 @@ def getAllPlots(filename):
 def main():
     TIME = 20 # seconds
     SERVER = 507 # {507 (FAST1), 505 (FAST2), 508 (LTT)}
-    #filename = getData(SERVER, TIME)
-    #getAllPlots(filename)
-    getAllPlots('YPmonitoring_EMUSX507_2019_12_16__15_38_45.csv')
+    filename = getData(SERVER, TIME)
+    getAllPlots(filename)
 
 if __name__=='__main__':
    main()
