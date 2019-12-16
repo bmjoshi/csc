@@ -15,7 +15,7 @@ from tdrstyle import setTDRStyle
 setTDRStyle()
 
 color_palette = [1, 901, 632, 809, 419, 600, 883];
-voltageMap = {'5.5V':0,'4.0V':1,'3.0V':2}
+voltageMap = {"3.0V":0,'4.0V':1,'5.5V':2}
 
 def query(server_):
    sample = requests.get("http://emusx"+str(server_)+".cern.ch:20011/urn:xdaq-application:lid=70/DMBStatus?dmb=0")
@@ -27,7 +27,22 @@ def query(server_):
    for i in range(69,90):
       tmpstr+=(soup.find_all("td")[i].string.strip().split('=   ')[1])
       if not (i==89): tmpstr+=','
+   tmpstr += '\n'
    return tmpstr
+
+def getData(server_, time_):
+   filename = "YPmonitoring_EMUSX"+str(server_)+"_"
+   filename += datetime.now().strftime("%Y_%m_%d__%H_%M_%S.csv")
+   outfile = open(filename, 'w')
+   starttime = time.time()
+   num = 1
+   while ((time.time()-starttime)<time_):
+      outfile.write(str(num)+','+datetime.now().strftime("%Y-%m-%d %H:%M:%S")+','+query(server_))
+      num += 1
+      time.sleep(1.0)
+   outfile.close()
+   return filename
+
 
 def discreteY(ylist):
     vec = []
@@ -71,8 +86,8 @@ def plot(data_, voltage_, str_):
     leg = ROOT.TLegend(0.125,0.85,0.925,0.925)
     leg.SetNColumns(7)
     for cfeb_ in xrange(7):
-        if (str_=='I'): index = 2+(cfeb_)*3 + voltageMap[voltage_]
-        elif (str_=='V'): index = 23 + (cfeb_)*3 + voltageMap[voltage_]
+        if (str_=='I'): index = 23+(cfeb_)*3 + voltageMap[voltage_]
+        elif (str_=='V'): index = 2 + (cfeb_)*3 + voltageMap[voltage_]
         else:
             print "Unknown quantity!"
             return
@@ -90,8 +105,8 @@ def plot(data_, voltage_, str_):
     if (str_=='I'): ytitle+=' [A]'
     elif (str_=='V'): ytitle+=' [V]'
 
-    ymin = min(YMIN)-0.25*(max(YMAX)+min(YMIN))
-    ymax = max(YMAX)+0.25*(max(YMAX)+min(YMIN))
+    ymin = min(YMIN)-0.1*(max(YMAX)+min(YMIN))
+    ymax = max(YMAX)+0.1*(max(YMAX)+min(YMIN))
     xmin = min(x_)
     xmax = max(x_)
 
@@ -117,25 +132,29 @@ def getAllPlots(filename):
     data = pd.read_csv(filename, delimiter=',', header=None)
     pdfName = filename.replace('.csv','.pdf')
     # define canvas
-    c = ROOT.TCanvas("c","New Canvas",1200,1200);
-    c.Divide(1,3)
     lst = []
-    for num, q in enumerate(['I','V']):
-        c.Clear()
+    clist = []
+    for num, q in enumerate(['V','I']):
+        clist.append(ROOT.TCanvas("c"+str(num),"New Canvas",1200,1200));
+        clist[num].Divide(1,3)
+        for v in voltageMap:
+            lst.append(plot(data, v, q))
+    for num, q in enumerate(['V','I']):
         for v in voltageMap:
             index = num*3+voltageMap[v]
             print "Plotting "+q+" "+v+" "+str(index+1)
-            c.cd(index+1)
-            lst.append(plot(data, v, q))
+            clist[num].cd(voltageMap[v]+1)
             lst[index][0].Draw("a")
             lst[index][1].Draw("same")
-        c.SaveAs(pdfName)
+        if (q=='V'): clist[num].SaveAs(pdfName+'(')
+        else: clist[num].SaveAs(pdfName+')')
 
 def main():
-    TIME = 10 # seconds
+    TIME = 20 # seconds
     SERVER = 507 # {507 (FAST1), 505 (FAST2), 508 (LTT)}
-    filename = getData(SERVER, TIME)
-    getAllPlots(filename)
+    #filename = getData(SERVER, TIME)
+    #getAllPlots(filename)
+    getAllPlots('YPmonitoring_EMUSX507_2019_12_16__15_38_45.csv')
 
 if __name__=='__main__':
    main()
